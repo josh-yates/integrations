@@ -1,0 +1,11 @@
+{
+    "notion": {
+        "key": "",
+        "locations_id": "",
+        "countries_id": ""
+    },
+    "google": {
+        "myMapsId": "",
+        "placesAPIKey": ""
+    }
+}
