@@ -8,7 +8,7 @@ $settings = Get-Content '.\googlemymapstonotion.local.json' | ConvertFrom-Json;
 
 # Get and parse my maps data
 
-$myMapsData = Invoke-WebRequest -Uri "https://www.google.com/maps/d/kml?forcekml=1&mid=$($settings.google.myMapsId)" -Method Get |
+$myMapsLocations = Invoke-WebRequest -Uri "https://www.google.com/maps/d/kml?forcekml=1&mid=$($settings.google.myMapsId)" -Method Get |
 Select-Object -ExpandProperty Content |
 Select-Xml -XPath "default:kml/default:Document/default:Folder" -Namespace @{ default = "http://www.opengis.net/kml/2.2" } |
 Select-Object -ExpandProperty Node |
@@ -40,7 +40,8 @@ Select-Object -ExpandProperty results |
 Select-Object -ExpandProperty properties |
 Select-Object
     @{ label = "Name"; Expression = { $_.Name.title[0].text.content } },
-    @{ label = "CountryId"; expression = { $_.Country.relation[0].id } }
+    @{ label = "CountryId"; expression = { $_.Country.relation[0].id } },
+    @{ label = "Coordinates"; Expression = { $_.properties.Coordinates.rich_text[0].plain_text } }
 
 $notionCountries = Invoke-WebRequest
     -Uri "https://api.notion.com/v1/databases/$($settings.notion.countries_id)/query"
@@ -52,9 +53,31 @@ Select-Object
     @{ label = "Id"; Expression = { $_.id } },
     @{ label = "Name"; Expression = { $_.properties.Name.title[0].text.content } }
 
+$locationsNotInNotion = $myMapsLocations |
+Where-Object {
+    $searchObject = $_;
+    ($notionLocations |
+    Where-Object { $_.Name -eq $searchObject.Name -and $_.Coordinates -eq $searchObject.Coordinates }) -eq $null
+}
+
+$locationsNotInNotion | ForEach-Object {
+    $countryName = (
+        Invoke-WebRequest -Uri "https://maps.googleapis.com/maps/api/geocode/json?latlng=$($_.Coordinates)&key=$($settings.google.geocodingAPIKey)&result_type=country" |
+        ConvertFrom-Json).results.formatted_address;
+    
+    $notionCountry = $notionCountries | Where-Object { $_.Name -eq $countryName };
+
+    $_.CountryId = $notionCountry.Id;
+}
+
+# TODO: Push locations to Notion
+
 # Get country / location information / maps link from places API
 # Identify locations to add
 # Identify locations not in maps; need flag for this
 # Add notion property for coordinates, to help distinguish
 # Use coordinates to identify nearby locations
 # Remember coordinates in KML are swapped around, and ignore the third one
+# Beans
+# penguins 
+# beans
