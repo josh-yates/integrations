@@ -14,15 +14,18 @@ Select-Xml -XPath "default:kml/default:Document/default:Folder" -Namespace @{ de
 Select-Object -ExpandProperty Node |
 Select-Object -Property @{label = "TypeName"; expression = { $_.name } }, @{label = "Places"; expression = { @($_.Placemark) } } |
 Select-Object -Property TypeName -ExpandProperty Places |
+Select-Object -Property TypeName -ExpandProperty Places |
 Select-Object -Property `
     TypeName,
     name,
     @{
         label = "Coordinates";
         Expression = {
-            $_.Point |
-            Select-Xml "default:coordinates"
-                -Namespace @{ default = "http://www.opengis.net/kml/2.2" }
+            $unparsedCoordinatesArray = (
+                $_.Point |
+                Select-Xml "default:coordinates" -Namespace @{ default = "http://www.opengis.net/kml/2.2" }
+            ).ToString().Split(",");
+            return "$($unparsedCoordinatesArray[1]),$($unparsedCoordinatesArray[0])";
         }
     }
 
@@ -54,3 +57,4 @@ Select-Object
 # Identify locations not in maps; need flag for this
 # Add notion property for coordinates, to help distinguish
 # Use coordinates to identify nearby locations
+# Remember coordinates in KML are swapped around, and ignore the third one
