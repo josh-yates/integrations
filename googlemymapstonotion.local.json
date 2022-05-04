@@ -6,6 +6,6 @@
     },
     "google": {
         "myMapsId": "",
-        "placesAPIKey": ""
+        "geocodingAPIKey": ""
     }
 }
