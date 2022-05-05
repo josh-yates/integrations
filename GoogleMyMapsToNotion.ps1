@@ -47,10 +47,10 @@ $notionLocations = Invoke-WebRequest `
 ConvertFrom-Json |
 Select-Object -ExpandProperty results |
 Select-Object -ExpandProperty properties |
-Select-Object
-@{ label = "Name"; Expression = { $_.Name.title[0].text.content } },
-@{ label = "CountryId"; expression = { $_.Country.relation[0].id } },
-@{ label = "Coordinates"; Expression = { $_.properties.Coordinates.rich_text[0].plain_text } }
+Select-Object -Property `
+@{ label = "Name"; Expression = { $_.Name.title[0].text.content } }, `
+@{ label = "CountryId"; expression = { $_.Country.relation[0].id } }, `
+@{ label = "Coordinates"; Expression = { $_.Coordinates.rich_text[0].plain_text } }
 
 Write-Debug "Done fetching Notion locations";
 
@@ -72,7 +72,7 @@ $locationsNotInNotion = $myMapsLocations |
 Where-Object {
     $searchObject = $_;
     ($notionLocations |
-    Where-Object { $_.Name -eq $searchObject.Name -and $_.Coordinates -eq $searchObject.Coordinates }) -eq $null
+    Where-Object { $_.Coordinates -eq $searchObject.Coordinates }) -eq $null
 }
 
 Write-Debug "Finished determining locations not in Notion";
@@ -145,7 +145,7 @@ $locationsToPush | ForEach-Object {
         -Uri "https://api.notion.com/v1/pages" `
         -Headers @{ Authorization = $settings.notion.key; "Notion-Version" = "2022-02-22" } `
         -Method Post `
-        -ContentType "application/json" `
+        -ContentType "application/json; charset=utf-8" `
         -Body ($_.postBody | ConvertTo-Json -Depth 10);
 }
 
